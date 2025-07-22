@@ -18,6 +18,10 @@ contract Handler is Test {
 
     address user = makeAddr("user");
 
+    uint256 public timesMintIsCalled;
+    uint256 public timesDepositIsCalled;
+    uint256 public timesRedeemIsCalled;
+
     constructor(DSCEngine _engine, DecentralizedStableCoin _dsc){
         dsce = _engine;
         dsc = _dsc;
@@ -32,16 +36,14 @@ contract Handler is Test {
 
         ERC20Mock collateralToken = _getCollateralTokenFromSeed(collateralTokenSeed);
 
-        // Simulate this user
-        vm.startPrank(user);
-
         // Mint and approve before deposit
-        collateralToken.mint(user, amountCollateral);
+        collateralToken.mint(msg.sender, amountCollateral);
+
+        vm.prank(msg.sender);
         collateralToken.approve(address(dsce), amountCollateral);
 
+        vm.prank(msg.sender);
         dsce.depositCollateral(address(collateralToken), amountCollateral);
-
-        vm.stopPrank();
     }
 
     /*
@@ -52,30 +54,29 @@ contract Handler is Test {
     function redeemCollateral(uint256 collateralTokenSeed, uint256 amountCollateral) public {
         ERC20Mock collateralToken = _getCollateralTokenFromSeed(collateralTokenSeed);
 
-        vm.startPrank(user);
-        uint256 maxCollateralToRedeem = dsce.getCollateralBalanceOfUser(address(collateralToken), user);
-        amountCollateral = bound(amountCollateral, 0, maxCollateralToRedeem);
-        if(amountCollateral == 0){
-            vm.stopPrank();
+        uint256 maxCollateralToRedeem = dsce.getCollateralBalanceOfUser(address(collateralToken), msg.sender);
+        if(maxCollateralToRedeem == 0){
             return;
         }
+        amountCollateral = bound(amountCollateral, 1, maxCollateralToRedeem);
 
-        // 2. Simulate remaining collateral and calculate health factor
-        (uint256 minted, uint256 collateralUsd) = dsce.getAccountInformation(user);
+        // Simulate remaining collateral and calculate health factor
+        (uint256 minted, uint256 collateralUsd) = dsce.getAccountInformation(msg.sender);
+        // These functions are not using msg.sender in their code that's why there is not need to vm.prank explicitly.
         uint256 redemptionUsd = dsce.getUsdValue(address(collateralToken), amountCollateral);
         uint256 newCollateralUsd = collateralUsd - redemptionUsd;
 
         // Health factor formula: (collateralAdjusted * 1e18) / minted
         uint256 newHealthFactor = dsce.calculateHealthFactor(minted, newCollateralUsd);
 
-        // 3. If redeem breaks the health factor, skip
+        // If redeem breaks the health factor, skip
         if (newHealthFactor < dsce.getMinHealthFactor()) {
             vm.stopPrank();
             return;
         }
 
+        vm.prank(msg.sender);
         dsce.redeemCollateral(address(collateralToken), amountCollateral);
-        vm.stopPrank();
     }
     
     function _getCollateralTokenFromSeed(uint256 collateralSeed) private view returns(ERC20Mock){
@@ -88,18 +89,19 @@ contract Handler is Test {
     function mintDsc(uint256 amount) public {
         amount = bound(amount, 1, MAX_MINTABLE_DSC_SIZE); // prevent overflow
 
-        vm.startPrank(user);
-        (uint256 minted, uint256 collateralValueInUsd) = dsce.getAccountInformation(user);
+        (uint256 minted, uint256 collateralValueInUsd) = dsce.getAccountInformation(msg.sender);
 
         uint256 totalMintedDsc = minted + amount;
 
         uint256 healthFactor = dsce.calculateHealthFactor(totalMintedDsc, collateralValueInUsd);
         if (healthFactor < dsce.getMinHealthFactor()) {
-            vm.stopPrank();
             return;
         }
 
+        vm.prank(msg.sender);
         dsce.mintDsc(amount);
-        vm.stopPrank();
     }
+
+
+    
 }

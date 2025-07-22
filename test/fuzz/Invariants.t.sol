@@ -21,6 +21,7 @@ contract Invariants is StdInvariant, Test {
     Handler handler;
 
     function setUp() external {
+        console.log(address(this));
         deployer = new DeployDSC();
         (dsc, dsce, config) = deployer.run();
         (,,weth,wbtc,) = config.activeNetworkConfig();
@@ -43,6 +44,9 @@ contract Invariants is StdInvariant, Test {
         console.log("totalSupply: ", totalSupply);
         console.log("wethValue: ", wethValue);
         console.log("wbtcValue: ", wbtcValue);
+        // console.log("Times Mint Called: ", handler.timesMintIsCalled());
+        // console.log("Times Deposit Called: ", handler.timesDepositIsCalled());
+        // console.log("Times Redeem Called: ", handler.timesRedeemIsCalled());    
 
         assert(wethValue + wbtcValue >= totalSupply);
     }
