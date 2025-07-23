@@ -13,14 +13,14 @@ contract Handler is Test {
     ERC20Mock weth;
     ERC20Mock wbtc;
 
+    // address user = makeAddr("user");
+
     uint256 MAX_DEPOSIT_SIZE = type(uint96).max;
     uint256 MAX_MINTABLE_DSC_SIZE = type(uint96).max;
 
-    address user = makeAddr("user");
-
-    uint256 public timesMintIsCalled;
-    uint256 public timesDepositIsCalled;
-    uint256 public timesRedeemIsCalled;
+    // uint256 public timesMintIsCalled;
+    // uint256 public timesDepositIsCalled;
+    // uint256 public timesRedeemIsCalled;
 
     constructor(DSCEngine _engine, DecentralizedStableCoin _dsc){
         dsce = _engine;
@@ -103,5 +103,4 @@ contract Handler is Test {
     }
 
 
-    
 }
