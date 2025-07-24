@@ -30,6 +30,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import {console} from "forge-std/Test.sol";
+import {OracleLib} from "./libraries/OracleLib.sol"; 
 
 /**
  * @title DSCEngine
@@ -53,6 +54,12 @@ import {console} from "forge-std/Test.sol";
  */
 
 contract DSCEngine is ReentrancyGuard{
+
+    /*//////////////////////////////////////////////////////////////
+                                 TYPES
+    //////////////////////////////////////////////////////////////*/
+
+    using OracleLib for AggregatorV3Interface;
 
     /*//////////////////////////////////////////////////////////////
                                  ERROS
@@ -308,7 +315,7 @@ contract DSCEngine is ReentrancyGuard{
 
     function getUsdValue(address token, uint256 amount) public view returns(uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
-        (,int256 price,,,) = priceFeed.latestRoundData();
+        (,int256 price,,,) = priceFeed.staleCheckLatestRoundData();
         
         /* price is in 8 decimals and amount is in 18 decimals.
          * To convert the price to 18 decimals, we multiply by 10^10 (ADDITIONAL_FEED_PRECISION).
@@ -320,7 +327,7 @@ contract DSCEngine is ReentrancyGuard{
 
     function getTokenAmountFromUsd(address token, uint256 usdAmountInWei) public view returns(uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
-        (,int256 price,,,) = priceFeed.latestRoundData();
+        (,int256 price,,,) = priceFeed.staleCheckLatestRoundData();
 
         return (usdAmountInWei * PRECISION) / (uint256(price) * ADDITIONAL_FEED_PRECISION);
     }
